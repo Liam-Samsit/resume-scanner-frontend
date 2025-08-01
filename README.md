@@ -1,16 +1,27 @@
-# resume_scanner_frontend
+# Resume Scanner - Frontend (Flutter)
 
-A new Flutter project.
+This is the Flutter-based frontend for the **Resume Scanner** app.  
+It connects to a FastAPI backend to allow users to upload resumes, compare them with job descriptions, and receive keyword-based scoring & improvement suggestions.
 
-## Getting Started
+<!--
+## 🚀 Features
+- File picker for PDF/DOCX resumes
+- API integration with backend
+- Clean, mobile-friendly UI
+- Future: Animated visuals, results dashboard
 
-This project is a starting point for a Flutter application.
+## 🛠 Tech Stack
+- Flutter
+- Dart
+- http package for API calls
+- file_picker for selecting resumes
+- google_fonts + lottie for UI
 
-A few resources to get you started if this is your first Flutter project:
+## 📦 Getting Started
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+# Install dependencies
+flutter pub get
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# Run the app
+flutter run
+-->
