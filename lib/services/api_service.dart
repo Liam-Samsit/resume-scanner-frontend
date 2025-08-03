@@ -1,74 +1,70 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import '../models/resume_analysis.dart';
-import 'package:http_parser/http_parser.dart';
-import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
+import '../models/resume_result.dart';
 
 class ApiService {
-  static final String baseUrl = kDebugMode
-      ? "http://127.0.0.1:8000"
-      : "https://your-backend.onrender.com";
+  static const String baseUrl = "http://127.0.0.1:8000"; // change to Render URL later
 
-  static Future<ResumeAnalysis> uploadResume({
-    required Uint8List fileBytes,
-    required String fileName,
-    String jobDescription = "",
-    String keywords = "",
-    String customWeights = "",
+  static Future<ResumeResult?> analyzeCV({
+    required PlatformFile file,
+    String? jobDescription,
+    String? keywords,
+    String? weights,
   }) async {
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/upload-resume'),
-    );
+    try {
+      var request = http.MultipartRequest("POST", Uri.parse("$baseUrl/upload-resume"));
 
-    // File
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      fileBytes,
-      filename: fileName,
-      contentType: MediaType(
-        fileName.toLowerCase().endsWith('.pdf') ? 'application' : 'application',
-        fileName.toLowerCase().endsWith('.pdf')
-            ? 'pdf'
-            : 'vnd.openxmlformats-officedocument.wordprocessingml.document',
-      ),
-    ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          "file",
+          file.bytes!,
+          filename: file.name,
+        ),
+      );
 
-    // Job description (optional)
-    if (jobDescription.isNotEmpty) {
-      request.fields['job_description'] = jobDescription;
-    }
-
-    // Keywords JSON (optional) - backend expects a dict, so we wrap in {}
-    if (keywords.isNotEmpty) {
-      List<String> words = keywords
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-      Map<String, List<String>> keywordMap = {"keywords": words};
-      request.fields['keywords_json'] = jsonEncode(keywordMap);
-    }
-
-    // Custom weights (optional, already formatted in upload_screen)
-    if (customWeights.isNotEmpty) {
-      request.fields['custom_weights'] = customWeights;
-    }
-
-    var streamedResponse = await request.send();
-    var response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 200) {
-      return ResumeAnalysis.fromJson(jsonDecode(response.body));
-    } else {
-      String backendMessage;
-      try {
-        backendMessage = jsonDecode(response.body)['error'] ?? "Unknown error";
-      } catch (_) {
-        backendMessage = response.body;
+      if (jobDescription != null && jobDescription.trim().isNotEmpty) {
+        request.fields["job_description"] = jobDescription;
       }
-      throw Exception(backendMessage);
+
+      if (keywords != null && keywords.trim().isNotEmpty) {
+        // Backend expects keywords_json if sending keywords directly
+        var keywordsList = keywords.split(",").map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        var keywordsMap = {for (var kw in keywordsList) kw: 1}; // default weight 1
+        request.fields["keywords_json"] = jsonEncode(keywordsMap);
+      }
+
+      if (weights != null && weights.trim().isNotEmpty) {
+        var weightsMap = _parseWeights(weights);
+        request.fields["custom_weights"] = jsonEncode(weightsMap);
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return ResumeResult.fromJson(jsonDecode(response.body), file.name);
+      } else {
+        print("Error: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception: $e");
+      return null;
     }
+  }
+
+  static Map<String, int> _parseWeights(String weights) {
+    var map = <String, int>{};
+    var entries = weights.split(",");
+    for (var entry in entries) {
+      var parts = entry.split(":");
+      if (parts.length == 2) {
+        var key = parts[0].trim();
+        var value = int.tryParse(parts[1].trim()) ?? 1;
+        map[key] = value;
+      }
+    }
+    return map;
   }
 }

@@ -1,103 +1,69 @@
 import 'package:flutter/material.dart';
-import '../models/resume_analysis.dart';
+import '../models/resume_result.dart';
+import '../utils/app_colors.dart';
+import '../widgets/animated_score_circle.dart';
+//import 'cv_details_screen.dart';
 
 class ResultsScreen extends StatelessWidget {
-  final ResumeAnalysis analysis;
+  final List<ResumeResult> results;
 
-  const ResultsScreen({super.key, required this.analysis});
+  const ResultsScreen({Key? key, required this.results}) : super(key: key);
 
-  Widget buildSkillList(String title, List<String> items, Color color) {
-    if (items.isEmpty) {
-      return const Text("None", style: TextStyle(color: Colors.grey));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: items
-              .map((e) => Chip(
-                    label: Text(e),
-                    backgroundColor: color.withOpacity(0.1),
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-      ],
-    );
+  String _scoreMessage(int score) {
+    if (score <= 20) return "Maybe you're not fit for the job";
+    if (score <= 40) return "Needs significant improvement";
+    if (score <= 60) return "Some good matches, but room for growth";
+    if (score <= 80) return "Strong match";
+    return "They should hire you ASAP";
   }
 
   @override
   Widget build(BuildContext context) {
-    final overall = analysis.overall;
-    final tech = analysis.technicalSkills;
-    final soft = analysis.softSkills;
-    final missingRanked = analysis.missingRanked;
+    final sortedResults = [...results]..sort((a, b) => b.score.compareTo(a.score));
 
     return Scaffold(
+      backgroundColor: AppColors.beige,
       appBar: AppBar(
-        title: const Text("Analysis Results"),
+        backgroundColor: AppColors.burgundy,
+        title: const Text("Ranking"),
       ),
-      body: SingleChildScrollView(
+      body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Overall score
-            Text("Overall Score: ${overall.score}%",
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            LinearProgressIndicator(
-              value: overall.score / 100,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
-              minHeight: 10,
+        itemCount: sortedResults.length,
+        itemBuilder: (context, index) {
+          final r = sortedResults[index];
+          final isTop = index == 0;
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/cv-details',
+                arguments: r,
+              );
+            },
+
+            child: Card(
+              elevation: isTop ? 8 : 3,
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    if (isTop) AnimatedScoreCircle(score: r.score, size: 120),
+                    if (isTop) const SizedBox(height: 10),
+                    Text(r.fileName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 5),
+                    if (isTop)
+                      Text(_scoreMessage(r.score), textAlign: TextAlign.center, style: const TextStyle(fontSize: 14)),
+                    if (!isTop)
+                      Text("${r.score}%", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
-
-            // Technical skills
-            Text("Technical Skills (${tech.score}%)",
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
-            buildSkillList("Matched", tech.matched, Colors.green),
-            buildSkillList("Missing", tech.missing, Colors.red),
-
-            // Soft skills
-            Text("Soft Skills (${soft.score}%)",
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
-            buildSkillList("Matched", soft.matched, Colors.green),
-            buildSkillList("Missing", soft.missing, Colors.red),
-
-            const Divider(height: 32),
-
-            // Missing ranked
-            Text("Missing Skills by Priority",
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
-            buildSkillList("🔥 High Priority", missingRanked.highPriority, Colors.red),
-            buildSkillList("⚡ Medium Priority", missingRanked.mediumPriority, Colors.orange),
-            buildSkillList("📎 Low Priority", missingRanked.lowPriority, Colors.blueGrey),
-
-            const Divider(height: 32),
-
-            // Suggestions
-            const Text("Suggestions",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            if (analysis.suggestions.isEmpty)
-              const Text("No suggestions", style: TextStyle(color: Colors.grey))
-            else
-              ...analysis.suggestions.map((s) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text("• $s"),
-                  )),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
