@@ -20,25 +20,25 @@ class ResumeScannerApp extends StatelessWidget {
       title: 'Resume Scanner',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.beige,
-        appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.burgundy,
-          titleTextStyle: AppTextStyles.heading.copyWith(color: Colors.white),
-          iconTheme: const IconThemeData(color: Colors.white),
+        scaffoldBackgroundColor: AppColors.darkPurple,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.darkPurple,
+          iconTheme: IconThemeData(color: AppColors.wheatBeige),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.burgundy,
-            textStyle: const TextStyle(color: Colors.white),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            backgroundColor: AppColors.nodeBackground,
+            foregroundColor: AppColors.wheatBeige,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.inputField,
+          hintStyle: AppTextStyles.hint,
         ),
       ),
+
       initialRoute: '/',
       routes: {
         '/': (context) => const UploadScreen(),
@@ -47,11 +47,13 @@ class ResumeScannerApp extends StatelessWidget {
           return JobInfoScreen(uploadedCVs: args);
         },
         '/results': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as List<ResumeResult>;
+          final args =
+              ModalRoute.of(context)!.settings.arguments as List<ResumeResult>;
           return ResultsScreen(results: args);
         },
         '/cv-details': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as ResumeResult;
+          final args =
+              ModalRoute.of(context)!.settings.arguments as ResumeResult;
           return CVDetailsScreen(result: args);
         },
       },

@@ -3,12 +3,9 @@ import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../services/api_service.dart';
 import '../models/resume_result.dart';
-//import 'results_screen.dart';
 
-
-class JobInfoScreen extends StatefulWidget
-{
-  final List uploadedCVs; // from UploadScreen
+class JobInfoScreen extends StatefulWidget {
+  final List uploadedCVs;
 
   const JobInfoScreen({Key? key, required this.uploadedCVs}) : super(key: key);
 
@@ -17,26 +14,55 @@ class JobInfoScreen extends StatefulWidget
 }
 
 class _JobInfoScreenState extends State<JobInfoScreen>
-{
+    with SingleTickerProviderStateMixin {
   final TextEditingController jobDescController = TextEditingController();
   final TextEditingController keywordsController = TextEditingController();
   final TextEditingController weightsController = TextEditingController();
 
   bool showWeightsField = false;
-
-  bool get isFormValid 
-{
-    return jobDescController.text.trim().isNotEmpty ||
-           keywordsController.text.trim().isNotEmpty;
-  }
-
   bool isLoading = false;
 
-void analyzeCVs() async {
+  late AnimationController _bounceController;
+  late Animation<double> _bounceAnimation;
+
+  bool get isFormValid {
+    return jobDescController.text.trim().isNotEmpty ||
+        keywordsController.text.trim().isNotEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _bounceController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _bounceAnimation = Tween<double>(begin: 1, end: 1.15)
+        .chain(CurveTween(curve: Curves.elasticOut))
+        .animate(_bounceController);
+
+    jobDescController.addListener(_onFieldChange);
+    keywordsController.addListener(_onFieldChange);
+  }
+
+  void _onFieldChange() {
+    if (isFormValid && !_bounceController.isAnimating) {
+      _bounceController.forward(from: 0);
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    jobDescController.removeListener(_onFieldChange);
+    keywordsController.removeListener(_onFieldChange);
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  void analyzeCVs() async {
     if (!isFormValid) return;
 
     setState(() => isLoading = true);
-
     List<ResumeResult> results = [];
 
     for (var cv in widget.uploadedCVs) {
@@ -51,141 +77,132 @@ void analyzeCVs() async {
 
     setState(() => isLoading = false);
 
-    Navigator.pushNamed(
-      context,
-      '/results',
-      arguments: results,
-    );
+    Navigator.pushNamed(context, '/results', arguments: results);
   }
 
-
-
-
   @override
-  Widget build(BuildContext context) 
-{
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.beige,
- appBar: AppBar(
-        backgroundColor: AppColors.burgundy,
- title: Text("Job Info", style: AppTextStyles.heading.copyWith(color: Colors.white))
+      backgroundColor: AppColors.darkPurple,
+      appBar: AppBar(
+        backgroundColor: AppColors.darkPurple,
+        title: Text("Job Info", style: AppTextStyles.heading),
       ),
- body: SingleChildScrollView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
- child: Column(
+        child: Column(
           children: [
             _buildLabeledField(
               label: "Job Description",
- tooltip: "Paste the full job posting here. The system will extract important keywords automatically.",
- controller: jobDescController,
- hint: "Enter job description...",
- maxLines: 5
+              tooltip: "Paste the full job posting here.",
+              controller: jobDescController,
+              hint: "Enter job description...",
+              maxLines: 5,
             ),
- const SizedBox(height: 20),
- _buildLabeledField(
+            const SizedBox(height: 20),
+            _buildLabeledField(
               label: "Keywords",
- tooltip: "You can list specific keywords instead of a full job description (e.g., Python, SQL).",
- controller: keywordsController,
- hint: "Enter keywords, separated by commas...",
- maxLines: 2
+              tooltip: "List keywords instead of a job description.",
+              controller: keywordsController,
+              hint: "Enter keywords, separated by commas...",
+              maxLines: 2,
             ),
- const SizedBox(height: 20),
- _buildWeightsField(),
- const SizedBox(height: 30),
- ElevatedButton(
-  onPressed: isFormValid && !isLoading ? analyzeCVs : null,
- style: ElevatedButton.styleFrom(
-    backgroundColor: isFormValid ? AppColors.burgundy : Colors.grey,
- padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40)
-  ),
- child: isLoading
-? const SizedBox(
-          height: 20, width: 20,
- child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-        )
-: const Text("Analyze", style: TextStyle(color: Colors.white))
-)
-
-]
-        )
-      )
+            const SizedBox(height: 20),
+            _buildWeightsField(),
+            const SizedBox(height: 30),
+            ScaleTransition(
+              scale: _bounceAnimation,
+              child: ElevatedButton(
+                onPressed: isFormValid && !isLoading ? analyzeCVs : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isFormValid ? AppColors.nodeBackground : Colors.grey,
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20, width: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.wheatBeige, strokeWidth: 2),
+                      )
+                    : Text("Analyze", style: AppTextStyles.body),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildLabeledField({
     required String label,
- required String tooltip,
- required TextEditingController controller,
- required String hint,
- int maxLines = 1
-  }) 
-{
+    required String tooltip,
+    required TextEditingController controller,
+    required String hint,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
- children: [
+      children: [
         Row(
           children: [
             Text(label, style: AppTextStyles.heading.copyWith(fontSize: 18)),
- const SizedBox(width: 8),
- Tooltip(
+            const SizedBox(width: 8),
+            Tooltip(
               message: tooltip,
- child: const Icon(Icons.info_outline, size: 18, color: Colors.grey)
-            )
-          ]
+              child: const Icon(Icons.info_outline, size: 18, color: AppColors.wheatBeige),
+            ),
+          ],
         ),
- const SizedBox(height: 8),
- TextField(
+        const SizedBox(height: 8),
+        TextField(
           controller: controller,
- maxLines: maxLines,
- decoration: InputDecoration(
+          maxLines: maxLines,
+          style: AppTextStyles.body,
+          decoration: InputDecoration(
             hintText: hint,
- hintStyle: AppTextStyles.hint,
- border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
- filled: true,
- fillColor: Colors.white
-          )
-        )
-      ]
+            hintStyle: AppTextStyles.hint,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+            fillColor: AppColors.inputField,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildWeightsField() 
-{
+  Widget _buildWeightsField() {
     return Column(
       children: [
         InkWell(
-          onTap: ()
-{
-            setState(()
-{
-              showWeightsField = !showWeightsField;
-            }
-);
+          onTap: () {
+            setState(() => showWeightsField = !showWeightsField);
           },
- child: Row(
+          child: Row(
             children: [
               Icon(showWeightsField ? Icons.arrow_drop_up : Icons.arrow_drop_down,
- color: AppColors.burgundy),
- Text("Custom Weights (optional)", style: AppTextStyles.heading.copyWith(fontSize: 16))
-            ]
-          )
+                  color: AppColors.wheatBeige),
+              Text("Custom Weights (optional)",
+                  style: AppTextStyles.heading.copyWith(fontSize: 16)),
+            ],
+          ),
         ),
- if (showWeightsField)
+        if (showWeightsField)
           Padding(
             padding: const EdgeInsets.only(top: 8),
- child: TextField(
+            child: TextField(
               controller: weightsController,
- maxLines: 3,
- decoration: InputDecoration(
+              maxLines: 3,
+              style: AppTextStyles.body,
+              decoration: InputDecoration(
                 hintText: "Example: python: 3, sql: 2",
- hintStyle: AppTextStyles.hint,
- border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
- filled: true,
- fillColor: Colors.white
-              )
-            )
-          )
-      ]
+                hintStyle: AppTextStyles.hint,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                filled: true,
+                fillColor: AppColors.inputField,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

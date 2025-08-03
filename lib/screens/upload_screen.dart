@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
-//import 'job_info_screen.dart';
-
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({Key? key}) : super(key: key);
@@ -38,43 +36,35 @@ class _UploadScreenState extends State<UploadScreen> {
 
   void goToNext() {
     if (uploadedCVs.isEmpty) return;
-    Navigator.pushNamed(
-      context,
-      '/job-info',
-      arguments: uploadedCVs,
-    );
+    Navigator.pushNamed(context, '/job-info', arguments: uploadedCVs);
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.beige,
+      backgroundColor: AppColors.darkPurple,
       appBar: AppBar(
-        backgroundColor: AppColors.burgundy,
-        title: Text("Upload CVs", style: AppTextStyles.heading.copyWith(color: Colors.white)),
+        backgroundColor: AppColors.darkPurple,
+        title: Text("Upload CVs", style: AppTextStyles.heading),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: uploadedCVs.isEmpty
-            ? _buildEmptyState()
-            : _buildCVList(),
+        child: uploadedCVs.isEmpty ? _buildEmptyState() : _buildCVList(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: pickCV,
-        backgroundColor: uploadedCVs.length < 5 ? AppColors.burgundy : Colors.grey,
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: uploadedCVs.length < 5 ? AppColors.nodeBackground : Colors.grey,
+        child: const Icon(Icons.add, color: AppColors.wheatBeige),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: uploadedCVs.isNotEmpty ? AppColors.burgundy : Colors.grey,
+            backgroundColor: uploadedCVs.isNotEmpty ? AppColors.nodeBackground : Colors.grey,
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
           onPressed: uploadedCVs.isNotEmpty ? goToNext : null,
-          child: const Text("Next", style: TextStyle(color: Colors.white)),
+          child: Text("Next", style: AppTextStyles.body),
         ),
       ),
     );
@@ -85,7 +75,10 @@ class _UploadScreenState extends State<UploadScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset("assets/icons/empty.png", height: 120),
+          Opacity(
+            opacity: 0.2,
+            child: Image.asset("assets/icons/empty.png", height: 120),
+          ),
           const SizedBox(height: 16),
           Text("You need to upload a CV", style: AppTextStyles.body),
         ],
@@ -99,10 +92,11 @@ class _UploadScreenState extends State<UploadScreen> {
       itemBuilder: (context, index) {
         final cv = uploadedCVs[index];
         return Card(
+          color: AppColors.nodeBackground,
           child: ListTile(
             title: Text(cv.name, style: AppTextStyles.body),
             trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
               onPressed: () => removeCV(index),
             ),
           ),

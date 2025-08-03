@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import '../models/resume_result.dart';
 
 class ApiService {
-  static const String baseUrl = "http://127.0.0.1:8000"; // change to Render URL later
+  static const String baseUrl = "http://127.0.0.1:8000"; // Change in production
 
   static Future<ResumeResult?> analyzeCV({
     required PlatformFile file,
@@ -13,58 +15,71 @@ class ApiService {
     String? weights,
   }) async {
     try {
-      var request = http.MultipartRequest("POST", Uri.parse("$baseUrl/upload-resume"));
-
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          "file",
-          file.bytes!,
-          filename: file.name,
-        ),
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/upload-resume'),
       );
 
+      // Attach CV file depending on platform
+      if (kIsWeb) {
+        // Web → Use bytes
+        if (file.bytes == null) {
+          print("❌ Error: File bytes are null on Web.");
+          return null;
+        }
+        request.files.add(http.MultipartFile.fromBytes(
+          'file',
+          file.bytes as Uint8List,
+          filename: file.name,
+        ));
+      } else {
+        // Mobile/Desktop → Use path
+        request.files.add(await http.MultipartFile.fromPath(
+          'file',
+          file.path!,
+          filename: file.name,
+        ));
+      }
+
+      // Optional fields
       if (jobDescription != null && jobDescription.trim().isNotEmpty) {
-        request.fields["job_description"] = jobDescription;
+        request.fields['job_description'] = jobDescription;
       }
-
       if (keywords != null && keywords.trim().isNotEmpty) {
-        // Backend expects keywords_json if sending keywords directly
-        var keywordsList = keywords.split(",").map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-        var keywordsMap = {for (var kw in keywordsList) kw: 1}; // default weight 1
-        request.fields["keywords_json"] = jsonEncode(keywordsMap);
+        // Convert CSV keywords to JSON { "keyword": weight }
+        final keywordList = keywords.split(',').map((e) => e.trim()).toList();
+        final Map<String, int> keywordMap = {
+          for (var k in keywordList) k: 3
+        };
+        request.fields['keywords_json'] = jsonEncode(keywordMap);
       }
-
       if (weights != null && weights.trim().isNotEmpty) {
-        var weightsMap = _parseWeights(weights);
-        request.fields["custom_weights"] = jsonEncode(weightsMap);
+        // Expecting "python: 3, sql: 2"
+        final Map<String, int> weightMap = {};
+        weights.split(',').forEach((pair) {
+          var parts = pair.split(':');
+          if (parts.length == 2) {
+            weightMap[parts[0].trim()] = int.tryParse(parts[1].trim()) ?? 1;
+          }
+        });
+        request.fields['custom_weights'] = jsonEncode(weightMap);
       }
 
+      // Send request
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        return ResumeResult.fromJson(jsonDecode(response.body), file.name);
+        final jsonData = jsonDecode(response.body);
+        return ResumeResult.fromJson(jsonData, file.name);
       } else {
-        print("Error: ${response.body}");
+        print("❌ Error: ${response.statusCode} - ${response.body}");
         return null;
       }
     } catch (e) {
-      print("Exception: $e");
+      print("❌ Exception: $e");
       return null;
     }
   }
-
-  static Map<String, int> _parseWeights(String weights) {
-    var map = <String, int>{};
-    var entries = weights.split(",");
-    for (var entry in entries) {
-      var parts = entry.split(":");
-      if (parts.length == 2) {
-        var key = parts[0].trim();
-        var value = int.tryParse(parts[1].trim()) ?? 1;
-        map[key] = value;
-      }
-    }
-    return map;
-  }
 }
+
