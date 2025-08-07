@@ -2,6 +2,8 @@
 
 A modern Flutter web app for uploading resumes and receiving smart keyword analysis based on job descriptions or custom keywords. Connected to a FastAPI backend that performs natural language processing to score resumes and provide improvement suggestions.
 
+**Website Link:** https://resume-scanner-backend-4jef.onrender.com/
+
 
 ## Features
 
