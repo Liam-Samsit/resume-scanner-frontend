@@ -8,7 +8,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 class ApiService {
-  static final String baseUrl = dotenv.env['API_URL'] ?? 'http://localhost:8000';
+  static final String baseUrl = kIsWeb
+  ? 'https://resume-scanner-backend-4jef.onrender.com'
+  : dotenv.env['API_URL'] ?? 'http://localhost:8000';
+
 
   static Future<ResumeResult?> analyzeCV({
     required PlatformFile file,
