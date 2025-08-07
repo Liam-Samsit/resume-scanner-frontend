@@ -6,8 +6,11 @@ import 'screens/job_info_screen.dart';
 import 'screens/results_screen.dart';
 import 'screens/cv_details_screen.dart';
 import 'models/resume_result.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const ResumeScannerApp());
 }
 

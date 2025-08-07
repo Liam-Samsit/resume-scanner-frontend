@@ -38,3 +38,15 @@ flutter_*.png
 # Misc
 *.log
 
+# Environment files
+.env
+
+# firebase related
+.firebase/
+*.log
+*.key
+*.pem
+*.json
+# Optional, depending on usage:
+# .firebaserc
+

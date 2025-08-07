@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import '../models/resume_result.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 class ApiService {
-  static const String baseUrl = "http://127.0.0.1:8000"; // Change in production
+  static final String baseUrl = dotenv.env['API_URL'] ?? 'http://localhost:8000';
 
   static Future<ResumeResult?> analyzeCV({
     required PlatformFile file,
